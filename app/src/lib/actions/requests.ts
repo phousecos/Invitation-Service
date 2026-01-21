@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sendInvitationApprovedNotification } from '@/lib/email/notifications'
 
 export async function approveRequest(requestId: string) {
   const supabase = await createClient()
@@ -15,7 +16,7 @@ export async function approveRequest(requestId: string) {
   // Get the request
   const { data: request, error: fetchError } = await supabase
     .from('invitation_requests')
-    .select('*, products(slug)')
+    .select('*, products(name, slug)')
     .eq('id', requestId)
     .single()
 
@@ -28,7 +29,7 @@ export async function approveRequest(requestId: string) {
   }
 
   // Generate invitation code using RPC
-  const product = request.products as { slug: string }
+  const product = request.products as { name: string; slug: string }
   const { data: code, error: codeError } = await supabase.rpc(
     'generate_invitation_code',
     { product_slug: product.slug }
@@ -77,6 +78,14 @@ export async function approveRequest(requestId: string) {
     target_id: requestId,
     details: { email: request.email, code },
   })
+
+  // Send email notification (don't block on failure)
+  sendInvitationApprovedNotification(
+    request.email,
+    product.name,
+    product.slug,
+    code
+  ).catch((err) => console.error('Failed to send approval email:', err))
 
   revalidatePath('/requests')
   revalidatePath('/')

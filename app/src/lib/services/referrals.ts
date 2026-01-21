@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { applyReferralCredit } from '@/lib/stripe/client'
+import { sendReferralRewardNotification } from '@/lib/email/notifications'
 
 export async function checkAndProcessReferralQualification(
   memberId: string
@@ -105,11 +106,17 @@ export async function processReferralReward(referralId: string): Promise<void> {
       *,
       referrer:referrer_member_id (
         id,
+        email,
         status,
         stripe_customer_id,
         name
       ),
+      referred:referred_member_id (
+        name,
+        email
+      ),
       product:product_id (
+        name,
         slug,
         referral_cap_per_year,
         config
@@ -130,6 +137,7 @@ export async function processReferralReward(referralId: string): Promise<void> {
 
   const referrer = referral.referrer as unknown as {
     id: string
+    email: string
     status: string
     stripe_customer_id: string | null
     name: string | null
@@ -193,7 +201,23 @@ export async function processReferralReward(referralId: string): Promise<void> {
       })
       .eq('id', referralId)
 
-    // TODO: Send email notification to referrer
+    // Send email notification to referrer
+    const referred = referral.referred as unknown as {
+      name: string | null
+      email: string
+    }
+    const productData = referral.product as unknown as {
+      name: string
+    }
+
+    sendReferralRewardNotification(
+      referrer.email,
+      referrer.name || 'Member',
+      referred.name || referred.email,
+      productData.name,
+      monthlyPrice
+    ).catch((err) => console.error('Failed to send referral reward email:', err))
+
     console.log(`Referral reward credited for referrer ${referrer.id}`)
   } else {
     console.error('Failed to apply Stripe credit for referral:', referralId)
