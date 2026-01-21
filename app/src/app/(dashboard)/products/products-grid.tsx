@@ -24,12 +24,14 @@ import {
 import { Pencil, Loader2 } from 'lucide-react'
 import { updateProduct } from '@/lib/actions/products'
 
+type ApprovalMode = 'manual' | 'auto' | 'sales'
+
 interface Product {
   id: string
   slug: string
   name: string
   entity_type: string
-  approval_mode: string
+  approval_mode: ApprovalMode
   trial_days: number
   referral_reward_months: number
   referral_cap_per_year: number
