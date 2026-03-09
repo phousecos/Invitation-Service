@@ -1,63 +1,44 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const ADMIN_COOKIE_NAME = 'admin_session'
 
-  // If env vars are missing, allow the request through (will fail at page level with better error)
-  if (!supabaseUrl || !supabaseAnonKey) {
+async function sha256(message: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(message)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+export async function middleware(request: NextRequest) {
+  const adminPassword = process.env.ADMIN_PASSWORD
+
+  // If ADMIN_PASSWORD is not set, allow through (will fail at action level)
+  if (!adminPassword) {
     return NextResponse.next()
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    // Protect admin routes - redirect to login if not authenticated
-    if (!user && !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/api/v1/')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-  } catch (error) {
-    console.error('Middleware auth error:', error)
-    // On error, redirect to login
-    if (!request.nextUrl.pathname.startsWith('/login')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
+  // Allow public API routes through (they use API key auth)
+  if (request.nextUrl.pathname.startsWith('/api/v1/')) {
+    return NextResponse.next()
   }
 
-  return supabaseResponse
+  // Allow login page through
+  if (request.nextUrl.pathname.startsWith('/login')) {
+    return NextResponse.next()
+  }
+
+  // Check admin session cookie
+  const sessionToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value
+  const expectedToken = await sha256(adminPassword)
+
+  if (!sessionToken || sessionToken !== expectedToken) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {

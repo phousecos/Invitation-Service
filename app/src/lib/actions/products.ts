@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { verifyAdminSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
 export async function updateProduct(
@@ -17,12 +18,12 @@ export async function updateProduct(
     config?: Record<string, unknown>
   }
 ) {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const isAdmin = await verifyAdminSession()
+  if (!isAdmin) {
     return { error: 'Unauthorized' }
   }
+
+  const supabase = createServiceClient()
 
   const { error: updateError } = await supabase
     .from('products')
@@ -34,7 +35,7 @@ export async function updateProduct(
   }
 
   await supabase.from('audit_logs').insert({
-    admin_user_id: user.id,
+    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'product_updated',
     target_table: 'products',
     target_id: productId,

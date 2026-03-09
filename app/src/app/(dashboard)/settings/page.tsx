@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { ApiKeysSection } from './api-keys-section'
 
 async function getApiKeys() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const { data: apiKeys, error } = await supabase
     .from('api_keys')
@@ -20,7 +20,7 @@ async function getApiKeys() {
 }
 
 async function getProducts() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const { data: products } = await supabase
     .from('products')

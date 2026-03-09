@@ -1,17 +1,17 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { verifyAdminSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { sendInvitationApprovedNotification } from '@/lib/email/notifications'
 
 export async function approveRequest(requestId: string) {
-  const supabase = await createClient()
-
-  // Get the user
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const isAdmin = await verifyAdminSession()
+  if (!isAdmin) {
     return { error: 'Unauthorized' }
   }
+
+  const supabase = createServiceClient()
 
   // Get the request
   const { data: request, error: fetchError } = await supabase
@@ -49,7 +49,7 @@ export async function approveRequest(requestId: string) {
     code_type: codeType,
     request_id: requestId,
     issued_to_email: request.email,
-    created_by: user.id,
+    created_by: null,
   })
 
   if (insertError) {
@@ -61,7 +61,7 @@ export async function approveRequest(requestId: string) {
     .from('invitation_requests')
     .update({
       status: 'approved',
-      reviewed_by: user.id,
+      reviewed_by: null,
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', requestId)
@@ -72,7 +72,7 @@ export async function approveRequest(requestId: string) {
 
   // Log the action
   await supabase.from('audit_logs').insert({
-    admin_user_id: user.id,
+    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'request_approved',
     target_table: 'invitation_requests',
     target_id: requestId,
@@ -94,13 +94,12 @@ export async function approveRequest(requestId: string) {
 }
 
 export async function rejectRequest(requestId: string, reason?: string) {
-  const supabase = await createClient()
-
-  // Get the user
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const isAdmin = await verifyAdminSession()
+  if (!isAdmin) {
     return { error: 'Unauthorized' }
   }
+
+  const supabase = createServiceClient()
 
   // Get the request
   const { data: request, error: fetchError } = await supabase
@@ -118,7 +117,7 @@ export async function rejectRequest(requestId: string, reason?: string) {
     .from('invitation_requests')
     .update({
       status: 'rejected',
-      reviewed_by: user.id,
+      reviewed_by: null,
       reviewed_at: new Date().toISOString(),
       rejection_reason: reason || null,
     })
@@ -130,7 +129,7 @@ export async function rejectRequest(requestId: string, reason?: string) {
 
   // Log the action
   await supabase.from('audit_logs').insert({
-    admin_user_id: user.id,
+    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'request_rejected',
     target_table: 'invitation_requests',
     target_id: requestId,

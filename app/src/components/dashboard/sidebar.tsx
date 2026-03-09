@@ -12,8 +12,7 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { logoutAction } from '@/lib/actions/auth'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -26,14 +25,6 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
 
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r">
@@ -62,13 +53,15 @@ export function Sidebar() {
         })}
       </nav>
       <div className="border-t p-3">
-        <button
-          onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <LogOut className="h-5 w-5" />
-          Sign Out
-        </button>
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <LogOut className="h-5 w-5" />
+            Sign Out
+          </button>
+        </form>
       </div>
     </div>
   )

@@ -5,31 +5,66 @@
 -- ENUMS
 -- ============================================================================
 
-CREATE TYPE entity_type AS ENUM ('individual', 'organization');
-CREATE TYPE approval_mode AS ENUM ('manual', 'auto', 'sales');
-CREATE TYPE invitation_code_type AS ENUM ('standard', 'referral', 'sales');
-CREATE TYPE invitation_code_status AS ENUM ('active', 'redeemed', 'revoked');
-CREATE TYPE invitation_request_status AS ENUM ('pending', 'approved', 'rejected');
-CREATE TYPE member_status AS ENUM ('trial', 'active', 'churned', 'suspended');
-CREATE TYPE qualification_status AS ENUM ('pending', 'qualified', 'failed');
-CREATE TYPE reward_status AS ENUM ('pending', 'credited', 'forfeited', 'capped');
-CREATE TYPE audit_action AS ENUM (
-  'request_approved',
-  'request_rejected',
-  'code_generated',
-  'code_revoked',
-  'member_suspended',
-  'member_reactivated',
-  'product_updated',
-  'settings_changed'
-);
+DO $$ BEGIN
+  CREATE TYPE entity_type AS ENUM ('individual', 'organization');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE approval_mode AS ENUM ('manual', 'auto', 'sales');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE invitation_code_type AS ENUM ('standard', 'referral', 'sales');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE invitation_code_status AS ENUM ('active', 'redeemed', 'revoked');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE invitation_request_status AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE member_status AS ENUM ('trial', 'active', 'churned', 'suspended');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE qualification_status AS ENUM ('pending', 'qualified', 'failed');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE reward_status AS ENUM ('pending', 'credited', 'forfeited', 'capped');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE audit_action AS ENUM (
+    'request_approved',
+    'request_rejected',
+    'code_generated',
+    'code_revoked',
+    'member_suspended',
+    'member_reactivated',
+    'product_updated',
+    'settings_changed'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================================
 -- TABLES
 -- ============================================================================
 
 -- Products table
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slug TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
@@ -47,7 +82,7 @@ CREATE TABLE products (
 );
 
 -- Invitation requests table
-CREATE TABLE invitation_requests (
+CREATE TABLE IF NOT EXISTS invitation_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
@@ -63,7 +98,7 @@ CREATE TABLE invitation_requests (
 );
 
 -- Invitation codes table
-CREATE TABLE invitation_codes (
+CREATE TABLE IF NOT EXISTS invitation_codes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   code TEXT UNIQUE NOT NULL,
@@ -80,7 +115,7 @@ CREATE TABLE invitation_codes (
 );
 
 -- Members table
-CREATE TABLE members (
+CREATE TABLE IF NOT EXISTS members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
@@ -98,16 +133,22 @@ CREATE TABLE members (
 );
 
 -- Add FK for redeemed_by_member_id after members table exists
-ALTER TABLE invitation_codes
-  ADD CONSTRAINT invitation_codes_redeemed_by_member_id_fkey
-  FOREIGN KEY (redeemed_by_member_id) REFERENCES members(id) ON DELETE SET NULL;
+DO $$ BEGIN
+  ALTER TABLE invitation_codes
+    ADD CONSTRAINT invitation_codes_redeemed_by_member_id_fkey
+    FOREIGN KEY (redeemed_by_member_id) REFERENCES members(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE invitation_codes
-  ADD CONSTRAINT invitation_codes_generated_by_member_id_fkey
-  FOREIGN KEY (generated_by_member_id) REFERENCES members(id) ON DELETE SET NULL;
+DO $$ BEGIN
+  ALTER TABLE invitation_codes
+    ADD CONSTRAINT invitation_codes_generated_by_member_id_fkey
+    FOREIGN KEY (generated_by_member_id) REFERENCES members(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Referrals table
-CREATE TABLE referrals (
+CREATE TABLE IF NOT EXISTS referrals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   referrer_member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
@@ -124,9 +165,9 @@ CREATE TABLE referrals (
 );
 
 -- Audit logs table
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  admin_user_id UUID NOT NULL,
+  admin_user_id UUID,
   action_type audit_action NOT NULL,
   target_table TEXT NOT NULL,
   target_id UUID,
@@ -136,7 +177,7 @@ CREATE TABLE audit_logs (
 );
 
 -- API keys table for product authentication
-CREATE TABLE api_keys (
+CREATE TABLE IF NOT EXISTS api_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   key_hash TEXT UNIQUE NOT NULL,
@@ -152,45 +193,45 @@ CREATE TABLE api_keys (
 -- ============================================================================
 
 -- Products
-CREATE INDEX idx_products_slug ON products(slug);
-CREATE INDEX idx_products_is_active ON products(is_active);
+CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
+CREATE INDEX IF NOT EXISTS idx_products_is_active ON products(is_active);
 
 -- Invitation requests
-CREATE INDEX idx_invitation_requests_product_id ON invitation_requests(product_id);
-CREATE INDEX idx_invitation_requests_status ON invitation_requests(status);
-CREATE INDEX idx_invitation_requests_email ON invitation_requests(email);
-CREATE INDEX idx_invitation_requests_created_at ON invitation_requests(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_invitation_requests_product_id ON invitation_requests(product_id);
+CREATE INDEX IF NOT EXISTS idx_invitation_requests_status ON invitation_requests(status);
+CREATE INDEX IF NOT EXISTS idx_invitation_requests_email ON invitation_requests(email);
+CREATE INDEX IF NOT EXISTS idx_invitation_requests_created_at ON invitation_requests(created_at DESC);
 
 -- Invitation codes
-CREATE INDEX idx_invitation_codes_product_id ON invitation_codes(product_id);
-CREATE INDEX idx_invitation_codes_code ON invitation_codes(code);
-CREATE INDEX idx_invitation_codes_status ON invitation_codes(status);
-CREATE INDEX idx_invitation_codes_issued_to_email ON invitation_codes(issued_to_email);
+CREATE INDEX IF NOT EXISTS idx_invitation_codes_product_id ON invitation_codes(product_id);
+CREATE INDEX IF NOT EXISTS idx_invitation_codes_code ON invitation_codes(code);
+CREATE INDEX IF NOT EXISTS idx_invitation_codes_status ON invitation_codes(status);
+CREATE INDEX IF NOT EXISTS idx_invitation_codes_issued_to_email ON invitation_codes(issued_to_email);
 
 -- Members
-CREATE INDEX idx_members_product_id ON members(product_id);
-CREATE INDEX idx_members_email ON members(email);
-CREATE INDEX idx_members_referral_code ON members(referral_code);
-CREATE INDEX idx_members_status ON members(status);
-CREATE INDEX idx_members_stripe_customer_id ON members(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS idx_members_product_id ON members(product_id);
+CREATE INDEX IF NOT EXISTS idx_members_email ON members(email);
+CREATE INDEX IF NOT EXISTS idx_members_referral_code ON members(referral_code);
+CREATE INDEX IF NOT EXISTS idx_members_status ON members(status);
+CREATE INDEX IF NOT EXISTS idx_members_stripe_customer_id ON members(stripe_customer_id);
 
 -- Referrals
-CREATE INDEX idx_referrals_product_id ON referrals(product_id);
-CREATE INDEX idx_referrals_referrer_member_id ON referrals(referrer_member_id);
-CREATE INDEX idx_referrals_referred_member_id ON referrals(referred_member_id);
-CREATE INDEX idx_referrals_qualification_status ON referrals(qualification_status);
-CREATE INDEX idx_referrals_reward_status ON referrals(reward_status);
-CREATE INDEX idx_referrals_reward_year ON referrals(reward_year);
+CREATE INDEX IF NOT EXISTS idx_referrals_product_id ON referrals(product_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer_member_id ON referrals(referrer_member_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referred_member_id ON referrals(referred_member_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_qualification_status ON referrals(qualification_status);
+CREATE INDEX IF NOT EXISTS idx_referrals_reward_status ON referrals(reward_status);
+CREATE INDEX IF NOT EXISTS idx_referrals_reward_year ON referrals(reward_year);
 
 -- Audit logs
-CREATE INDEX idx_audit_logs_admin_user_id ON audit_logs(admin_user_id);
-CREATE INDEX idx_audit_logs_action_type ON audit_logs(action_type);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
-CREATE INDEX idx_audit_logs_target_table ON audit_logs(target_table);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_admin_user_id ON audit_logs(admin_user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action_type ON audit_logs(action_type);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_target_table ON audit_logs(target_table);
 
 -- API keys
-CREATE INDEX idx_api_keys_product_id ON api_keys(product_id);
-CREATE INDEX idx_api_keys_key_hash ON api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_keys_product_id ON api_keys(product_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
 
 -- ============================================================================
 -- FUNCTIONS
@@ -281,26 +322,30 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
--- TRIGGERS
+-- TRIGGERS (idempotent: drop then create)
 -- ============================================================================
 
--- Updated_at triggers
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
 CREATE TRIGGER update_products_updated_at
   BEFORE UPDATE ON products
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_invitation_requests_updated_at ON invitation_requests;
 CREATE TRIGGER update_invitation_requests_updated_at
   BEFORE UPDATE ON invitation_requests
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_invitation_codes_updated_at ON invitation_codes;
 CREATE TRIGGER update_invitation_codes_updated_at
   BEFORE UPDATE ON invitation_codes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_members_updated_at ON members;
 CREATE TRIGGER update_members_updated_at
   BEFORE UPDATE ON members
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_referrals_updated_at ON referrals;
 CREATE TRIGGER update_referrals_updated_at
   BEFORE UPDATE ON referrals
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -320,57 +365,75 @@ ALTER TABLE api_keys ENABLE ROW LEVEL SECURITY;
 
 -- Admin policies (authenticated users can access everything)
 -- In production, you'd want more granular role-based policies
+-- Note: Service role key bypasses RLS entirely
 
+DROP POLICY IF EXISTS "Admins can view all products" ON products;
 CREATE POLICY "Admins can view all products" ON products
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage products" ON products;
 CREATE POLICY "Admins can manage products" ON products
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Admins can view all requests" ON invitation_requests;
 CREATE POLICY "Admins can view all requests" ON invitation_requests
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage requests" ON invitation_requests;
 CREATE POLICY "Admins can manage requests" ON invitation_requests
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Admins can view all codes" ON invitation_codes;
 CREATE POLICY "Admins can view all codes" ON invitation_codes
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage codes" ON invitation_codes;
 CREATE POLICY "Admins can manage codes" ON invitation_codes
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Admins can view all members" ON members;
 CREATE POLICY "Admins can view all members" ON members
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage members" ON members;
 CREATE POLICY "Admins can manage members" ON members
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Admins can view all referrals" ON referrals;
 CREATE POLICY "Admins can view all referrals" ON referrals
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage referrals" ON referrals;
 CREATE POLICY "Admins can manage referrals" ON referrals
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_logs;
 CREATE POLICY "Admins can view audit logs" ON audit_logs
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Admins can insert audit logs" ON audit_logs;
 CREATE POLICY "Admins can insert audit logs" ON audit_logs
   FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Admins can view api keys" ON api_keys;
 CREATE POLICY "Admins can view api keys" ON api_keys
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage api keys" ON api_keys;
 CREATE POLICY "Admins can manage api keys" ON api_keys
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Service role policies for API access (bypasses RLS by default)
 
 -- ============================================================================
--- SEED DATA
+-- SEED DATA (idempotent: insert only if not exists)
 -- ============================================================================
 
--- Insert initial products
 INSERT INTO products (slug, name, entity_type, approval_mode, trial_days, referral_reward_months, referral_cap_per_year, referral_qualification_days, referral_chargeback_buffer_days, config) VALUES
   ('lumynr', 'Lumynr', 'individual', 'manual', 30, 1, 10, 30, 7, '{"monthly_price": 25}'),
   ('agentpmo', 'AgentPMO', 'organization', 'auto', 14, 1, 10, 30, 7, '{"monthly_price": 49}'),
-  ('prept', 'Prept', 'organization', 'sales', 14, 1, 10, 30, 7, '{"monthly_price": 99}');
+  ('prept', 'Prept', 'organization', 'sales', 14, 1, 10, 30, 7, '{"monthly_price": 99}')
+ON CONFLICT (slug) DO NOTHING;
+
+-- Make admin_user_id nullable if it was NOT NULL (for password-based auth without Supabase Auth users)
+ALTER TABLE audit_logs ALTER COLUMN admin_user_id DROP NOT NULL;

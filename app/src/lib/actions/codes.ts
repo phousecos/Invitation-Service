@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { verifyAdminSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
 export async function generateCode(
@@ -8,13 +9,12 @@ export async function generateCode(
   email?: string,
   codeType: 'standard' | 'sales' = 'standard'
 ) {
-  const supabase = await createClient()
-
-  // Get the user
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const isAdmin = await verifyAdminSession()
+  if (!isAdmin) {
     return { error: 'Unauthorized' }
   }
+
+  const supabase = createServiceClient()
 
   // Get the product
   const { data: product, error: productError } = await supabase
@@ -34,7 +34,7 @@ export async function generateCode(
   )
 
   if (codeError || !code) {
-    return { error: 'Failed to generate code' }
+    return { error: `Failed to generate code: ${codeError?.message || 'unknown error'}` }
   }
 
   // Create the invitation code
@@ -43,16 +43,16 @@ export async function generateCode(
     code,
     code_type: codeType,
     issued_to_email: email || null,
-    created_by: user.id,
+    created_by: null,
   })
 
   if (insertError) {
-    return { error: 'Failed to create invitation code' }
+    return { error: `Failed to create invitation code: ${insertError.message}` }
   }
 
   // Log the action
   await supabase.from('audit_logs').insert({
-    admin_user_id: user.id,
+    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'code_generated',
     target_table: 'invitation_codes',
     details: { code, email, code_type: codeType },
@@ -65,13 +65,12 @@ export async function generateCode(
 }
 
 export async function revokeCode(codeId: string) {
-  const supabase = await createClient()
-
-  // Get the user
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const isAdmin = await verifyAdminSession()
+  if (!isAdmin) {
     return { error: 'Unauthorized' }
   }
+
+  const supabase = createServiceClient()
 
   // Get the code
   const { data: existingCode, error: fetchError } = await supabase
@@ -100,7 +99,7 @@ export async function revokeCode(codeId: string) {
 
   // Log the action
   await supabase.from('audit_logs').insert({
-    admin_user_id: user.id,
+    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'code_revoked',
     target_table: 'invitation_codes',
     target_id: codeId,
