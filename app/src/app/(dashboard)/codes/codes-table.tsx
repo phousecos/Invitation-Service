@@ -73,6 +73,7 @@ export function CodesTable({
   const [newCodeType, setNewCodeType] = useState<'standard' | 'sales'>('standard')
   const [generatedCode, setGeneratedCode] = useState<string | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [generateError, setGenerateError] = useState<string | null>(null)
 
   const updateFilters = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -86,10 +87,13 @@ export function CodesTable({
 
   const handleGenerateCode = async () => {
     if (!newCodeProduct) return
+    setGenerateError(null)
     startTransition(async () => {
       const result = await generateCode(newCodeProduct, newCodeEmail || undefined, newCodeType)
       if (result.success && result.code) {
         setGeneratedCode(result.code)
+      } else if (result.error) {
+        setGenerateError(result.error)
       }
     })
   }
@@ -114,6 +118,7 @@ export function CodesTable({
     setNewCodeEmail('')
     setNewCodeType('standard')
     setGeneratedCode(null)
+    setGenerateError(null)
   }
 
   return (
@@ -185,6 +190,11 @@ export function CodesTable({
               </div>
             ) : (
               <div className="space-y-4">
+                {generateError && (
+                  <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                    {generateError}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Product</Label>
                   <Select value={newCodeProduct} onValueChange={setNewCodeProduct}>
