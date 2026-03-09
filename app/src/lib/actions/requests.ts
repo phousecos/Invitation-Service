@@ -49,7 +49,6 @@ export async function approveRequest(requestId: string) {
     code_type: codeType,
     request_id: requestId,
     issued_to_email: request.email,
-    created_by: null,
   })
 
   if (insertError) {
@@ -72,7 +71,7 @@ export async function approveRequest(requestId: string) {
 
   // Log the action
   await supabase.from('audit_logs').insert({
-    admin_user_id: '00000000-0000-0000-0000-000000000000',
+
     action_type: 'request_approved',
     target_table: 'invitation_requests',
     target_id: requestId,
@@ -129,7 +128,7 @@ export async function rejectRequest(requestId: string, reason?: string) {
 
   // Log the action
   await supabase.from('audit_logs').insert({
-    admin_user_id: '00000000-0000-0000-0000-000000000000',
+
     action_type: 'request_rejected',
     target_table: 'invitation_requests',
     target_id: requestId,

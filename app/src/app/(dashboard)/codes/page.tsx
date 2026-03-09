@@ -31,11 +31,17 @@ async function getCodes(status?: string, productId?: string) {
 
 async function getProducts() {
   const supabase = createServiceClient()
-  const { data: products } = await supabase
+  const { data: products, error } = await supabase
     .from('products')
     .select('id, name, slug')
     .eq('is_active', true)
 
+  if (error) {
+    console.error('Failed to fetch products:', error)
+    return []
+  }
+
+  console.log('Products loaded:', products?.length ?? 0)
   return products || []
 }
 

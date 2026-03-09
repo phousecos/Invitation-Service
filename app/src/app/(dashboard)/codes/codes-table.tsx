@@ -195,6 +195,11 @@ export function CodesTable({
                     {generateError}
                   </div>
                 )}
+                {products.length === 0 && (
+                  <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+                    No products found. Make sure the migration has been run and products are seeded in the database.
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Product</Label>
                   <Select value={newCodeProduct} onValueChange={setNewCodeProduct}>
