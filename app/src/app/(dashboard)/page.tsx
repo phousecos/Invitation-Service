@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Mail, Key, Users, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
 async function getMetrics() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const [
     { count: pendingRequests },

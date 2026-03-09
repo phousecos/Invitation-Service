@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { RequestsTable } from './requests-table'
 
 async function getRequests(status?: string, productId?: string) {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   let query = supabase
     .from('invitation_requests')
@@ -30,7 +30,7 @@ async function getRequests(status?: string, productId?: string) {
 }
 
 async function getProducts() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data: products } = await supabase
     .from('products')
     .select('id, name, slug')

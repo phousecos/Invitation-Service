@@ -1,16 +1,17 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { verifyAdminSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'
 
 export async function createApiKey(productId: string, name: string) {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const isAdmin = await verifyAdminSession()
+  if (!isAdmin) {
     return { error: 'Unauthorized' }
   }
+
+  const supabase = createServiceClient()
 
   // Generate API key
   const key = `vis_${crypto.randomBytes(32).toString('hex')}`
@@ -20,7 +21,7 @@ export async function createApiKey(productId: string, name: string) {
     product_id: productId,
     key_hash: keyHash,
     name,
-    created_by: user.id,
+    created_by: null,
   })
 
   if (insertError) {
@@ -29,7 +30,7 @@ export async function createApiKey(productId: string, name: string) {
   }
 
   await supabase.from('audit_logs').insert({
-    admin_user_id: user.id,
+    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'settings_changed',
     target_table: 'api_keys',
     details: { action: 'created', name, product_id: productId },
@@ -42,12 +43,12 @@ export async function createApiKey(productId: string, name: string) {
 }
 
 export async function revokeApiKey(keyId: string) {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const isAdmin = await verifyAdminSession()
+  if (!isAdmin) {
     return { error: 'Unauthorized' }
   }
+
+  const supabase = createServiceClient()
 
   const { error: updateError } = await supabase
     .from('api_keys')
@@ -59,7 +60,7 @@ export async function revokeApiKey(keyId: string) {
   }
 
   await supabase.from('audit_logs').insert({
-    admin_user_id: user.id,
+    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'settings_changed',
     target_table: 'api_keys',
     target_id: keyId,
@@ -72,12 +73,12 @@ export async function revokeApiKey(keyId: string) {
 }
 
 export async function deleteApiKey(keyId: string) {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  const isAdmin = await verifyAdminSession()
+  if (!isAdmin) {
     return { error: 'Unauthorized' }
   }
+
+  const supabase = createServiceClient()
 
   const { error: deleteError } = await supabase
     .from('api_keys')
@@ -89,7 +90,7 @@ export async function deleteApiKey(keyId: string) {
   }
 
   await supabase.from('audit_logs').insert({
-    admin_user_id: user.id,
+    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'settings_changed',
     target_table: 'api_keys',
     target_id: keyId,

@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { ProductsGrid } from './products-grid'
 
 async function getProducts() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const { data: products, error } = await supabase
     .from('products')

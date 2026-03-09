@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -21,7 +21,7 @@ interface PageProps {
 }
 
 async function getMember(memberId: string) {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const { data: member, error } = await supabase
     .from('members')
@@ -41,7 +41,7 @@ async function getMember(memberId: string) {
 }
 
 async function getReferralStats(memberId: string) {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const currentYear = new Date().getFullYear()
 
   const [
