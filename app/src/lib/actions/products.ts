@@ -35,7 +35,7 @@ export async function updateProduct(
   }
 
   await supabase.from('audit_logs').insert({
-    admin_user_id: '00000000-0000-0000-0000-000000000000',
+
     action_type: 'product_updated',
     target_table: 'products',
     target_id: productId,

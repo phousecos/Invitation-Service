@@ -37,26 +37,25 @@ export async function generateCode(
     return { error: `Failed to generate code: ${codeError?.message || 'unknown error'}` }
   }
 
-  // Create the invitation code
-  const { error: insertError } = await supabase.from('invitation_codes').insert({
+  // Create the invitation code (omit created_by to avoid NOT NULL constraint issues)
+  const insertData: Record<string, unknown> = {
     product_id: productId,
     code,
     code_type: codeType,
     issued_to_email: email || null,
-    created_by: null,
-  })
+  }
+  const { error: insertError } = await supabase.from('invitation_codes').insert(insertData)
 
   if (insertError) {
     return { error: `Failed to create invitation code: ${insertError.message}` }
   }
 
-  // Log the action
+  // Log the action (best-effort, don't block on failure)
   await supabase.from('audit_logs').insert({
-    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'code_generated',
     target_table: 'invitation_codes',
     details: { code, email, code_type: codeType },
-  })
+  }).then(({ error }) => { if (error) console.error('Audit log failed:', error) })
 
   revalidatePath('/codes')
   revalidatePath('/')
@@ -97,14 +96,13 @@ export async function revokeCode(codeId: string) {
     return { error: 'Failed to revoke code' }
   }
 
-  // Log the action
+  // Log the action (best-effort)
   await supabase.from('audit_logs').insert({
-    admin_user_id: '00000000-0000-0000-0000-000000000000',
     action_type: 'code_revoked',
     target_table: 'invitation_codes',
     target_id: codeId,
     details: { code: existingCode.code },
-  })
+  }).then(({ error }) => { if (error) console.error('Audit log failed:', error) })
 
   revalidatePath('/codes')
   revalidatePath('/')

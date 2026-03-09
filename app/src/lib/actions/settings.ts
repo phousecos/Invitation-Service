@@ -21,7 +21,6 @@ export async function createApiKey(productId: string, name: string) {
     product_id: productId,
     key_hash: keyHash,
     name,
-    created_by: null,
   })
 
   if (insertError) {
@@ -30,7 +29,7 @@ export async function createApiKey(productId: string, name: string) {
   }
 
   await supabase.from('audit_logs').insert({
-    admin_user_id: '00000000-0000-0000-0000-000000000000',
+
     action_type: 'settings_changed',
     target_table: 'api_keys',
     details: { action: 'created', name, product_id: productId },
@@ -60,7 +59,7 @@ export async function revokeApiKey(keyId: string) {
   }
 
   await supabase.from('audit_logs').insert({
-    admin_user_id: '00000000-0000-0000-0000-000000000000',
+
     action_type: 'settings_changed',
     target_table: 'api_keys',
     target_id: keyId,
@@ -90,7 +89,7 @@ export async function deleteApiKey(keyId: string) {
   }
 
   await supabase.from('audit_logs').insert({
-    admin_user_id: '00000000-0000-0000-0000-000000000000',
+
     action_type: 'settings_changed',
     target_table: 'api_keys',
     target_id: keyId,
