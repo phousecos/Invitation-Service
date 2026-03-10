@@ -152,7 +152,9 @@ export function CodesTable({
           </Select>
         </div>
 
-        <Dialog open={generateDialogOpen} onOpenChange={resetGenerateDialog}>
+        <Dialog open={generateDialogOpen} onOpenChange={(open) => {
+          if (!open) resetGenerateDialog()
+        }}>
           <DialogTrigger asChild>
             <Button onClick={() => setGenerateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
