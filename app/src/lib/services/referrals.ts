@@ -119,7 +119,12 @@ export async function processReferralReward(referralId: string): Promise<void> {
         name,
         slug,
         referral_cap_per_year,
-        config
+        config,
+        brand_name,
+        brand_color,
+        logo_url,
+        sender_email,
+        signup_domain
       )
     `)
     .eq('id', referralId)
@@ -144,9 +149,15 @@ export async function processReferralReward(referralId: string): Promise<void> {
   }
 
   const product = referral.product as unknown as {
+    name: string
     slug: string
     referral_cap_per_year: number
     config: { monthly_price?: number }
+    brand_name: string | null
+    brand_color: string
+    logo_url: string | null
+    sender_email: string | null
+    signup_domain: string | null
   }
 
   // Check if referrer is still active
@@ -206,15 +217,20 @@ export async function processReferralReward(referralId: string): Promise<void> {
       name: string | null
       email: string
     }
-    const productData = referral.product as unknown as {
-      name: string
-    }
 
     sendReferralRewardNotification(
       referrer.email,
       referrer.name || 'Member',
       referred.name || referred.email,
-      productData.name,
+      {
+        name: product.name,
+        slug: product.slug,
+        brandName: product.brand_name,
+        brandColor: product.brand_color,
+        logoUrl: product.logo_url,
+        senderEmail: product.sender_email,
+        signupDomain: product.signup_domain,
+      },
       monthlyPrice
     ).catch((err) => console.error('Failed to send referral reward email:', err))
 

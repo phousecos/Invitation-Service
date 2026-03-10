@@ -35,6 +35,11 @@ export interface Database {
           referral_qualification_days: number
           referral_chargeback_buffer_days: number
           config: ProductConfig
+          brand_name: string | null
+          brand_color: string
+          logo_url: string | null
+          sender_email: string | null
+          signup_domain: string | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -51,6 +56,11 @@ export interface Database {
           referral_qualification_days?: number
           referral_chargeback_buffer_days?: number
           config?: ProductConfig
+          brand_name?: string | null
+          brand_color?: string
+          logo_url?: string | null
+          sender_email?: string | null
+          signup_domain?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -67,6 +77,11 @@ export interface Database {
           referral_qualification_days?: number
           referral_chargeback_buffer_days?: number
           config?: ProductConfig
+          brand_name?: string | null
+          brand_color?: string
+          logo_url?: string | null
+          sender_email?: string | null
+          signup_domain?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string

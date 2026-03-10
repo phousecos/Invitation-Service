@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   // Get product for referral URL
   const { data: product } = await supabase
     .from('products')
-    .select('slug, referral_cap_per_year')
+    .select('slug, referral_cap_per_year, signup_domain')
     .eq('id', productId)
     .single()
 
@@ -95,8 +95,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   // Build referral URL
+  const domain = product?.signup_domain || `${product?.slug || 'app'}.velorumsoftware.com`
   const referralUrl = member.referral_code
-    ? `https://${product?.slug || 'app'}.velorumsoftware.com/signup?ref=${member.referral_code}`
+    ? `https://${domain}/signup?ref=${member.referral_code}`
     : null
 
   return success({
