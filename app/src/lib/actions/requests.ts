@@ -16,7 +16,7 @@ export async function approveRequest(requestId: string) {
   // Get the request
   const { data: request, error: fetchError } = await supabase
     .from('invitation_requests')
-    .select('*, products(name, slug)')
+    .select('*, products(name, slug, brand_name, brand_color, logo_url, sender_email, signup_domain)')
     .eq('id', requestId)
     .single()
 
@@ -29,7 +29,15 @@ export async function approveRequest(requestId: string) {
   }
 
   // Generate invitation code using RPC
-  const product = request.products as { name: string; slug: string }
+  const product = request.products as {
+    name: string
+    slug: string
+    brand_name: string | null
+    brand_color: string
+    logo_url: string | null
+    sender_email: string | null
+    signup_domain: string | null
+  }
   const { data: code, error: codeError } = await supabase.rpc(
     'generate_invitation_code',
     { product_slug: product.slug }
@@ -81,8 +89,15 @@ export async function approveRequest(requestId: string) {
   // Send email notification (don't block on failure)
   sendInvitationApprovedNotification(
     request.email,
-    product.name,
-    product.slug,
+    {
+      name: product.name,
+      slug: product.slug,
+      brandName: product.brand_name,
+      brandColor: product.brand_color,
+      logoUrl: product.logo_url,
+      senderEmail: product.sender_email,
+      signupDomain: product.signup_domain,
+    },
     code
   ).catch((err) => console.error('Failed to send approval email:', err))
 

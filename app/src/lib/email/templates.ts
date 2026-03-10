@@ -1,9 +1,23 @@
+export interface ProductBranding {
+  brandName: string
+  brandColor: string
+  logoUrl?: string | null
+}
+
 interface RequestReceivedParams {
   email: string
   productName: string
+  branding: ProductBranding
 }
 
-export function requestReceivedEmail({ email, productName }: RequestReceivedParams): string {
+function logoOrHeading(branding: ProductBranding): string {
+  if (branding.logoUrl) {
+    return `<img src="${branding.logoUrl}" alt="${branding.brandName}" style="max-height: 40px;" />`
+  }
+  return `<h1 style="color: ${branding.brandColor}; margin: 0;">${branding.brandName}</h1>`
+}
+
+export function requestReceivedEmail({ email, productName, branding }: RequestReceivedParams): string {
   return `
     <!DOCTYPE html>
     <html>
@@ -13,10 +27,10 @@ export function requestReceivedEmail({ email, productName }: RequestReceivedPara
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #111; margin: 0;">Velorum</h1>
+        ${logoOrHeading(branding)}
       </div>
 
-      <h2 style="color: #111;">We've Received Your Request</h2>
+      <h2 style="color: ${branding.brandColor};">We've Received Your Request</h2>
 
       <p>Hi there,</p>
 
@@ -26,7 +40,7 @@ export function requestReceivedEmail({ email, productName }: RequestReceivedPara
 
       <p style="margin-top: 30px;">
         Best regards,<br>
-        The Velorum Team
+        The ${branding.brandName} Team
       </p>
 
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
@@ -44,9 +58,10 @@ interface InvitationApprovedParams {
   productName: string
   invitationCode: string
   signupUrl: string
+  branding: ProductBranding
 }
 
-export function invitationApprovedEmail({ email, productName, invitationCode, signupUrl }: InvitationApprovedParams): string {
+export function invitationApprovedEmail({ email, productName, invitationCode, signupUrl, branding }: InvitationApprovedParams): string {
   return `
     <!DOCTYPE html>
     <html>
@@ -56,30 +71,30 @@ export function invitationApprovedEmail({ email, productName, invitationCode, si
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #111; margin: 0;">Velorum</h1>
+        ${logoOrHeading(branding)}
       </div>
 
-      <h2 style="color: #111;">You're Invited!</h2>
+      <h2 style="color: ${branding.brandColor};">You're Invited!</h2>
 
       <p>Great news! Your invitation request for <strong>${productName}</strong> has been approved.</p>
 
       <p>Here's your invitation code:</p>
 
       <div style="background: #f5f5f5; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
-        <code style="font-size: 24px; font-weight: bold; color: #111; letter-spacing: 2px;">${invitationCode}</code>
+        <code style="font-size: 24px; font-weight: bold; color: ${branding.brandColor}; letter-spacing: 2px;">${invitationCode}</code>
       </div>
 
       <p>Use this code when you sign up to get started:</p>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${signupUrl}" style="background: #111; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+        <a href="${signupUrl}" style="background: ${branding.brandColor}; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 500;">
           Sign Up Now
         </a>
       </div>
 
       <p style="margin-top: 30px;">
         Welcome aboard!<br>
-        The Velorum Team
+        The ${branding.brandName} Team
       </p>
 
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
@@ -98,9 +113,10 @@ interface ReferralRewardParams {
   referredName: string
   productName: string
   rewardAmount: string
+  branding: ProductBranding
 }
 
-export function referralRewardEmail({ email, referrerName, referredName, productName, rewardAmount }: ReferralRewardParams): string {
+export function referralRewardEmail({ email, referrerName, referredName, productName, rewardAmount, branding }: ReferralRewardParams): string {
   return `
     <!DOCTYPE html>
     <html>
@@ -110,10 +126,10 @@ export function referralRewardEmail({ email, referrerName, referredName, product
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #111; margin: 0;">Velorum</h1>
+        ${logoOrHeading(branding)}
       </div>
 
-      <h2 style="color: #111;">You Earned a Referral Reward!</h2>
+      <h2 style="color: ${branding.brandColor};">You Earned a Referral Reward!</h2>
 
       <p>Hey ${referrerName},</p>
 
@@ -129,7 +145,7 @@ export function referralRewardEmail({ email, referrerName, referredName, product
 
       <p style="margin-top: 30px;">
         Cheers,<br>
-        The Velorum Team
+        The ${branding.brandName} Team
       </p>
 
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">

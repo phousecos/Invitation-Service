@@ -41,7 +41,6 @@ async function getProducts() {
     return []
   }
 
-  console.log('Products loaded:', products?.length ?? 0)
   return products || []
 }
 
