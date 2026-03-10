@@ -30,6 +30,10 @@ async function getCodes(status?: string, productId?: string) {
 }
 
 async function getProducts() {
+  const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+  console.log('Service client env check — URL:', hasUrl, 'SERVICE_KEY:', hasServiceKey)
+
   const supabase = createServiceClient()
   const { data: products, error } = await supabase
     .from('products')
@@ -38,11 +42,11 @@ async function getProducts() {
 
   if (error) {
     console.error('Failed to fetch products:', error)
-    return []
+    return { products: [], debug: `Error: ${error.message} | URL: ${hasUrl} | KEY: ${hasServiceKey}` }
   }
 
   console.log('Products loaded:', products?.length ?? 0)
-  return products || []
+  return { products: products || [], debug: `Loaded ${products?.length ?? 0} products | URL: ${hasUrl} | KEY: ${hasServiceKey}` }
 }
 
 interface PageProps {
@@ -51,7 +55,7 @@ interface PageProps {
 
 export default async function CodesPage({ searchParams }: PageProps) {
   const params = await searchParams
-  const [codes, products] = await Promise.all([
+  const [codes, productResult] = await Promise.all([
     getCodes(params.status, params.product),
     getProducts(),
   ])
@@ -63,11 +67,15 @@ export default async function CodesPage({ searchParams }: PageProps) {
         <p className="text-muted-foreground">
           View and manage invitation codes
         </p>
+        {/* Temporary debug info — remove after confirming products load */}
+        <p className="text-xs text-muted-foreground mt-1 font-mono">
+          DEBUG: {productResult.debug}
+        </p>
       </div>
 
       <CodesTable
         codes={codes}
-        products={products}
+        products={productResult.products}
         currentStatus={params.status || 'all'}
         currentProduct={params.product || 'all'}
       />
